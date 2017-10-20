@@ -2,9 +2,11 @@ This project was created to help deal with my procrastination. Its a scheduling 
 
 the task times are then reset every week.
 
-Compile
+Compile & run Instructions (Make sure that both files are in the same directory)
 ------------
 gcc -o schedule schedule.c
+chmod u+x clear.sh
+gcc ./schedule
 
 How to use:
 ---------------
