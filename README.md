@@ -5,7 +5,9 @@ the task times are then reset every week.
 Compile & run Instructions (Make sure that both files are in the same directory)
 ------------
 gcc -o schedule schedule.c
+
 chmod u+x clear.sh
+
 gcc ./schedule
 
 How to use:
