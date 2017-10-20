@@ -19,6 +19,7 @@ struct tasks
 int task_num = 0;
 
 /*Functions*/
+void clear();
 void tasknum(FILE *fd);
 void start(FILE *fd , FILE *out);
 void view_tasks(FILE *fd);
@@ -73,6 +74,10 @@ int main ()
 		else if (strcmp(buf,"exit")==0)
 		{
 			exit(0);
+		}
+		else if (strcmp(buf,"clear")==0)
+		{
+			clear();
 		}
 		printf("%% ");
 	}
@@ -141,8 +146,9 @@ void weekly_reset(FILE *fd , FILE *out)
 /*delete task from the file*/
 void delete_task(FILE *fd, FILE *out)
 {
+	//printf("________________________________________________________________\n");
 	char buf[MAXLINE];
-	printf("Name: ");
+	printf("\tName: ");
 	if(!fgets(buf,MAXLINE,stdin))
 		perror("fgets");
 	if(buf[strlen(buf)-1]=='\n')
@@ -186,8 +192,9 @@ void delete_task(FILE *fd, FILE *out)
 /*adding task to list*/
 void add_task(FILE *fd , FILE *out)
 {
+//	printf("____________________________________\n");
 	char buf[MAXLINE];
-	printf("Name: ");
+	printf("\tName: ");
 	if(!fgets(buf,MAXLINE,stdin))
 		perror("fgets");
 
@@ -195,7 +202,7 @@ void add_task(FILE *fd , FILE *out)
 		buf[strlen(buf)-1] = 0;
 
 	strcpy(p.name,buf);
-	p.time = 0;
+	p.time = 1;
 
 	/*append to structure.txt*/
 	fd = fopen("structure.txt","a");
@@ -227,7 +234,7 @@ void view_tasks(FILE *fd)
 	hr=t=min=sec=0;
 
 	fd = fopen("structure.txt","r");
-	printf("\t--------------------------\n");
+	printf("\t-----------------------------\n");
 	while(fread(&p,sizeof(struct tasks),1,fd) != 0)
 	{
 		hr = p.time/3600;
@@ -238,7 +245,7 @@ void view_tasks(FILE *fd)
 		printf("\t|%d-%s & %ldh.%ldm.%lds|\n",i++,p.name,hr,min,sec);
 		hr=t=min=sec=0;
 	}
-	printf("\t--------------------------\n");
+	printf("\t----------------------------\n");
 	putchar('\n');
 	fclose(fd);
 }
@@ -273,9 +280,9 @@ void start(FILE *fd , FILE *out)
 	/*variables*/
 	time_t timer;
 	struct tm y2k = {0};
-	int seconds , seconds_now;
+	unsigned long seconds , seconds_now;
 	char start , finish;
-	int times[task_num+1];
+	int times[task_num];
 	times[task_num] = '\0';
 	int num,i,read;
 	num=i=read=0;
@@ -302,47 +309,45 @@ void start(FILE *fd , FILE *out)
 	/*using standard IO for fd*/
 	out = fdopen(ff2,"r+");
 
+	printf("_________________________________________________________________________\n");
+
 	/*begin processing daily tasks...*/
 	while(fread(&p,sizeof(struct tasks),1,fd)!=0)
 	{
 		putchar('\n');
-		printf("---------------------\n");
+	//	printf("---------------------\n");
 		printf("start: %s?",p.name);
 		scanf(" %c" , &start);
 		
 		if(start == 'n')
 		{
-			flag = 1;	/*skip task*/
+		//	p.time += 1;
+			if(!fwrite(&p,sizeof(struct tasks),1,out))
+				perror("fwrite");
 		}
 		else if (start == 'y')
 		{
 			time(&timer);
 			seconds = difftime(timer,mktime(&y2k));
-		}
-		if(flag == 0){
-		printf("finish %s?:" , p.name);
-		scanf(" %c" , &finish);
-		printf("----------------------\n");
-		if(finish == 'y')
-		{
-			time(&timer);
-			seconds_now = difftime(timer,mktime(&y2k));
-			p.time += (seconds_now - seconds);
 
-			/*writing updated task to file*/
-			if(!fwrite(&p,sizeof(struct tasks),1,out))
-				perror("fwrite");
+			printf("finish %s?:",p.name);
+			scanf(" %c",&finish);
+
+			if(finish=='y')
+			{
+				time(&timer);
+				seconds_now = difftime(timer,mktime(&y2k));
+				p.time += (seconds_now - seconds);
+
+				if(!fwrite(&p,sizeof(struct tasks),1,out))
+					perror("fwrite");
+			}
 		}
-		}
-		else if (flag == 1)
-		{
-			if(!fwrite(&p,sizeof(struct tasks),1,out))
-				perror("fwrite");
-		}
-		flag = 0;
+		
 		
 	}
-
+//	printf("______________________________________________________________________\n");
+	putchar('\n');
 	/*now ordering tasks from temp file*/
 	rewind(fd);
 	rewind(out);
@@ -392,5 +397,35 @@ void start(FILE *fd , FILE *out)
 	fclose(out);
 	close(ff2);
 	unlink(good_template);
+
+}
+void clear()
+{
+	pid_t pid;
+	int status;
+	char file[MAXLINE];
+	
+	strcpy(file,"./clear.sh\0");
+
+	if((pid = fork())<0)
+		perror("fork");
+	else if (pid == 0)
+	{
+		execlp(file,file,(char*)0);
+		perror("couldn't execute");
+	}
+
+	/*parent*/
+	if((pid = waitpid(pid,&status,0))<0)
+		perror("waitpid error");
+
+
+	
+		/*title screen*/
+		putchar('\n');
+		printf("\t\t\t\t--------------------------\n");
+		printf("\t\t\t\t|-----Scheduler program-----|\n");
+		printf("\t\t\t\t---------------------------\n");
+		putchar('\n');
 
 }
